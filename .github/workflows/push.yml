@@ -1,0 +1,27 @@
+name: push
+
+on:
+  push:
+      # Sequence of patterns matched against refs/heads
+      branches:
+        # Push events on main branch
+        - main
+        - master
+        - '*'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 18
+      - run: npm ci
+      - run: npm run build:h5
+      - run: npm run build:weapp
+      - uses: actions/upload-artifact@v3
+        with:
+          name: park
+          path: |
+            h5
+            weapp
