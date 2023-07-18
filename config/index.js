@@ -42,7 +42,7 @@ const config = {
       url: {
         enable: true,
         config: {
-          limit: 102400 // 设定转换尺寸上限
+          limit: 2 // 设定转换尺寸上限
         }
       },
       cssModules: {
@@ -54,7 +54,7 @@ const config = {
       }
     }
   },
-  plugins: ['@tarojs/plugin-html'],
+  plugins: ['@tarojs/plugin-html', '@tarojs/plugin-http'],
   h5: {
     publicPath: '/',
     staticDirectory: 'static',

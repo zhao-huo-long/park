@@ -4,15 +4,18 @@ import './index.less'
 import ImageList from './image-list'
 import { NavBar, Input, Button } from '@nutui/nutui-react-taro';
 import { Cell } from '@nutui/nutui-react-taro';
-import '@nutui/nutui-react-taro/dist/esm/NavBar/style/style.css'
-import { useState } from 'react';
-import ava1 from './img/头像1.jpeg'
+import { useEffect, useState } from 'react';
+import ava1 from './img/a1.jpeg'
 import { Notify } from '@nutui/nutui-react-taro';
+import { globalInfoContext } from '../../context'
+import { useContext } from 'react'
+import request from '../../request';
 
 export default function Index() {
-  const [msg, setMsg] = useState({
-    name: '小王',
-    ava: ava1,
+  const state = useContext(globalInfoContext)
+  const [user, setUser] = useState({
+    name: '',
+    headPortrait: ava1,
   })
   const [showNotify, SetShowNotify] = useState(false)
   const [states, SetStates] = useState({
@@ -26,10 +29,24 @@ export default function Index() {
   }
   useLoad(() => {
     console.log('Page loaded.')
-
-    console.log(Notify)
   })
+  useEffect(() => {
+    setUser({ ...state.user } as any)
+  }, [state?.user]);
 
+  async function submit() {
+    const result = await request('/skgy/tour/update', {
+      method: 'post',
+      data: {
+        ...user
+      }
+    },)
+    if(result?.data?.success){
+      changeNotify('更新成功', 'success')
+      state.updateUser(user)
+    }
+    console.log(`result.data`, result)
+  }
   return (
     <View className='me'>
       <NavBar
@@ -42,15 +59,19 @@ export default function Index() {
       >
         我的
       </NavBar>
-      <Cell title="我的形象" description={<img className='my-ava' src={msg.ava} />}>
+      <Cell title="我的形象" description={<img className='my-ava' src={user.headPortrait} />}>
       </Cell>
-      <Cell title="昵称" description={<Input value={msg.name} onChange={(v) => setMsg({ ...msg, name: v })} className='input-nickname' placeholder="请输入你的昵称" />}>
+      <Cell
+        title="昵称"
+        description={<Input value={user.name} onChange={(v) => setUser({ ...user, name: v })}
+          className='input-nickname' placeholder="请输入你的昵称" />}
+      >
       </Cell>
-      <Cell title="选择新形象" description={<ImageList value={msg.ava} onClick={v => setMsg({ ...msg, ava: v })} />} >
+      <Cell title="选择新形象" description={<ImageList value={user.headPortrait} onClick={v => setUser({ ...user, headPortrait: v })} />} >
       </Cell>
       <View className='act'>
         <Button onClick={() => Taro.navigateBack()}>返回</Button>
-        <Button onClick={() => { changeNotify('成功', 'success'); console.log(msg) }}>提交</Button>
+        <Button onClick={() => { submit() }}>提交</Button>
       </View>
       <Notify
         visible={showNotify}

@@ -1,13 +1,13 @@
 import { View, Image } from "@tarojs/components"
-import img1 from '../img/头像1.jpeg'
-import img2 from '../img/头像2.jpg'
-import img3 from '../img/头像3.jpg'
-import img4 from '../img/头像4.jpg'
-import img5 from '../img/头像5.jpg'
-import img6 from '../img/头像6.jpg'
-import img7 from '../img/头像7.jpg'
-import img8 from '../img/头像8.jpg'
-import img9 from '../img/头像9.jpeg'
+import img1 from '../img/a1.jpeg'
+import img2 from '../img/a2.jpg'
+import img3 from '../img/a3.jpg'
+import img4 from '../img/a4.jpg'
+import img5 from '../img/a5.jpg'
+import img6 from '../img/a6.jpg'
+import img7 from '../img/a7.jpg'
+import img8 from '../img/a8.jpg'
+import img9 from '../img/a9.jpeg'
 import './index.less'
 
 const Images = [img1, img2, img3, img4, img5, img6, img7, img8, img9]
