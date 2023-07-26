@@ -1,5 +1,6 @@
 import Taro from "@tarojs/taro";
 import axios from "axios";
+import res from "./res";
 
 const request = axios.create({
   baseURL: "http://39.107.79.30",
@@ -16,4 +17,9 @@ request.interceptors.response.use(function(result){
   return result
 })
 
-export default request;
+export default async (path: string, config: any) => {
+  // if(path){
+  //   return res[path]
+  // }
+  return request(path, config)
+}
