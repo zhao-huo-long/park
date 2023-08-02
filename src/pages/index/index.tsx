@@ -1,19 +1,19 @@
-import { View, Audio } from '@tarojs/components'
+import { View, Video } from '@tarojs/components'
 import Taro, { } from '@tarojs/taro'
 import './index.less'
 import LayoutCnt from './LayoutCnt'
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useRef, useState } from 'react'
 import request from '../../request'
-import { Popup, Picker } from '@nutui/nutui-react-taro'
+import { Popup, Picker, Switch } from '@nutui/nutui-react-taro'
 import { PlayStart, Voice, Search } from '@nutui/icons-react-taro'
-import { Video } from '@nutui/nutui-react-taro';
-// import { globalInfoContext } from '../../context'
+// import { Video } from '@nutui/nutui-react-taro';
+import { globalInfoContext } from '../../context'
 import { NavBar, Tabbar, } from '@nutui/nutui-react-taro';
-import { Home, My } from '@nutui/icons-react-taro';
+import { Home, My, Location2 } from '@nutui/icons-react-taro';
 import { getLocation, goToMePage, } from './utils'
 
 function split(a: string = '') {
-  return a.split(',').map(Number)
+  return (a || '').split(',').map(Number)
 }
 
 export default function Index() {
@@ -25,6 +25,11 @@ export default function Index() {
   const [detail, setDetail] = useState<any>({})
   const [filterKey, setFilterKey] = useState('*')
   const audio = useRef<any>()
+  const [linesSrc, setLinesSrc] = useState<string[]>([])
+  const [myLocationPoint, setMyLocationPoint] = useState({})
+  const state = useContext(globalInfoContext)
+  const [dao, setDao] = useState(Taro.getStorageSync('dao'))
+
   const playPointMusic = async () => {
     const { latitude, longitude } = await getLocation() as any
     console.log('latitude, longitude', latitude, longitude)
@@ -33,11 +38,48 @@ export default function Index() {
         lat: `${latitude},${longitude}`
       }
     })
-    if (res?.data?.resultSet?.audioUrl) {
-      Taro.playBackgroundAudio({ dataUrl: res.data.resultSet.audioUrl, title: res.data.resultSet.name })
+
+    setMyLocationPoint(res?.data?.resultSet)
+    if (res?.data?.resultSet?.audioUrl && dao) {
+      Taro.playBackgroundAudio({
+        dataUrl: res.data.resultSet.audioUrl,
+        title: res.data.resultSet.name
+      })
     }
   }
-
+  function log(data: any){
+    request(`/skgy/tour/add`, {
+      method: 'post',
+      data: {
+        scenicSpot: data.name,
+        userName: state.user?.name
+      }
+    })
+  }
+  function addLine(targetId: number) {
+    Taro.showLoading({
+      title: `规划路线中`
+    })
+    request('/skgy/tour/navigation', {
+      method: 'get',
+      params: {
+        destinationId: targetId,
+        originId: myLocationPoint.id,
+      }
+    })
+      .then((e: any) => {
+        setLinesSrc(e.data.resultSet.urlList)
+      }).finally(() => {
+        setDetailVis(false)
+        setTimeout(() => {
+          Taro.hideLoading()
+        }, 200)
+      })
+  }
+  console.log('lines', linesSrc)
+  useEffect(() => {
+    Taro.setStorageSync('dao', dao)
+  }, [dao])
   useEffect(() => {
     const innerAudioContext = Taro.createInnerAudioContext()
     audio.current = innerAudioContext
@@ -45,22 +87,23 @@ export default function Index() {
     innerAudioContext.onPlay(() => {
       console.log('开始播放')
     })
-    console.log(innerAudioContext)
     request('/skgy/tour/queryScenicSpot', {})
       .then((e: any) => {
         setPoints(e.data.resultSet || e.resultSet || [])
       })
     playPointMusic()
   }, [])
+  const header = state?.user?.headPortrait
+  console.log(myLocationPoint)
   return (
     <View className='index'>
-      {/* <NavBar
-        style={{
-          marginBottom: 'var(--nutui-navbar-margin-bottom, 0)',
-          visibility: 'hidden'
-        }}
-      >石刻公园</NavBar> */}
       <NavBar
+        left={<>智能导览：
+          <Switch
+            checked={dao}
+            onChange={(v) => setDao(v)}
+          /></>
+        }
         style={{
           marginBottom: 'var(--nutui-navbar-margin-bottom, 0)'
         }}
@@ -71,21 +114,31 @@ export default function Index() {
           </span>
         }
       >石刻公园</NavBar>
-      <LayoutCnt dynElements={points.filter(i => ['*', i.type].includes(filterKey)).map(i => {
-        const [x, y] = split(i.location)
-        const [w, d] = split(i.iconSize)
-        return {
-          ...i,
-          src: i.iconUrl,
-          x,
-          y,
-          width: w,
-          height: d,
-        }
-      })} onClickEle={e => {
-        setDetail({ ...e })
-        setDetailVis(true)
-      }} />
+      <LayoutCnt
+        lines={linesSrc}
+        dynElements={points.concat({ ...myLocationPoint, type: '*', iconUrl: header }).filter(i => ['*', i.type].includes(filterKey)).map(i => {
+          if (!i) {
+            return
+          }
+          const [x, y] = split(i.location)
+          const [w, h] = split(i.iconSize)
+          return {
+            ...i,
+            src: i.iconUrl,
+            x: x - w / 2,
+            y: y - h / 2,
+            width: w,
+            height: h,
+          }
+        })} onClickEle={e => {
+          console.log(e)
+          // if (dao) {
+          // addLine(e.id)
+          // } else if (e.type === 'scenic_spot') {
+          setDetail({ ...e });
+          setDetailVis(true);
+          // }
+        }} />
       <View className='pad'></View>
       <Tabbar fixed value={0} >
         <Tabbar.Item key={'title'} title="首页" icon={<Home width={20} height={20} />} />
@@ -99,7 +152,10 @@ export default function Index() {
         position="bottom"
       >
         <View className="msg">
-          <View className={'title'}>景点名称: {detail?.name}</View>
+          <View className={'title'}>景点名称: {detail?.name}
+            <Location2 onClick={() => {
+              addLine(detail.id, detail)
+            }} /> </View>
           <View className={'content'}>
             <img className={'cover'} src={detail?.coverUrl} />
             <View className={'intro'}>
@@ -107,9 +163,16 @@ export default function Index() {
             </View>
           </View>
           <View className='act'>
-            <PlayStart onClick={() => setVideoVis(true)} size={30} />
+            <PlayStart style={{ visibility: !detail.videoUrl ? 'hidden' : undefined }} onClick={() => setVideoVis(true)} size={30} />
             <View className='blank'></View>
-            <Voice onClick={() => {
+            <Voice style={{ visibility: !detail.audioUrl ? 'hidden' : undefined }} onClick={() => {
+              if (!detail.audioUrl) {
+                return
+              }
+              Taro.showToast({
+                title: '播放',
+                icon: 'success'
+              })
               Taro.playBackgroundAudio({ dataUrl: detail.audioUrl, title: detail.name })
             }} size={30} />
           </View>
@@ -124,7 +187,7 @@ export default function Index() {
         <View className="msg" >
           <View className='title'>景点视频介绍</View>
           {
-            <Video className='video'
+            <video className='video'
               onPlay={() => {
                 request('/skgy/tour/add', {
                   method: 'post',
@@ -133,8 +196,10 @@ export default function Index() {
                   }
                 })
               }}
-              options={{ controls: true, autoplay: true }} source={detail?.videoUrl}>
-            </Video>
+              src={detail?.videoUrl}
+            // options={{ controls: true, autoplay: true }}
+            >
+            </video>
           }
         </View>
       </Popup>
@@ -160,7 +225,6 @@ export default function Index() {
             }}
             onPlayEnd={() => alert('ended!')}
           /> */}
-
           {
             // <Audio
             //   onPlay={() => {
