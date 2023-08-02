@@ -10,7 +10,7 @@ import { PlayStart, Voice, Search } from '@nutui/icons-react-taro'
 import { globalInfoContext } from '../../context'
 import { NavBar, Tabbar, } from '@nutui/nutui-react-taro';
 import { Home, My, Location2 } from '@nutui/icons-react-taro';
-import { getLocation, goToMePage, } from './utils'
+import { filterOption, getLocation, goToMePage, } from './utils'
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -38,24 +38,28 @@ export default function Index() {
         lat: `${latitude},${longitude}`
       }
     })
-
     setMyLocationPoint(res?.data?.resultSet)
     if (res?.data?.resultSet?.audioUrl && dao) {
       Taro.playBackgroundAudio({
         dataUrl: res.data.resultSet.audioUrl,
-        title: res.data.resultSet.name
+        title: res.data.resultSet.name,
+        success() {
+          log(res.data.resultSet.name, res.data.resultSet.audioUrl)
+        }
       })
     }
   }
-  function log(data: any){
+  function log(name: string, url: string) {
     request(`/skgy/tour/add`, {
       method: 'post',
       data: {
-        scenicSpot: data.name,
+        scenicSpotName: name,
+        url,
         userName: state.user?.name
       }
     })
   }
+
   function addLine(targetId: number) {
     Taro.showLoading({
       title: `规划路线中`
@@ -76,7 +80,6 @@ export default function Index() {
         }, 200)
       })
   }
-  console.log('lines', linesSrc)
   useEffect(() => {
     Taro.setStorageSync('dao', dao)
   }, [dao])
@@ -173,7 +176,11 @@ export default function Index() {
                 title: '播放',
                 icon: 'success'
               })
-              Taro.playBackgroundAudio({ dataUrl: detail.audioUrl, title: detail.name })
+              Taro.playBackgroundAudio({
+                dataUrl: detail.audioUrl, title: detail.name, success() {
+                  log(detail.name, detail.audioUrl)
+                }
+              })
             }} size={30} />
           </View>
         </View>
@@ -189,65 +196,13 @@ export default function Index() {
           {
             <video className='video'
               onPlay={() => {
-                request('/skgy/tour/add', {
-                  method: 'post',
-                  data: {
-                    ...detail
-                  }
-                })
+                log(detail.name, detail.videoUrl)
               }}
               src={detail?.videoUrl}
+              controls
             // options={{ controls: true, autoplay: true }}
             >
             </video>
-          }
-        </View>
-      </Popup>
-      <Popup
-        visible={audioVis}
-        onClose={() => setAudioVis(false)}
-        title="景点音频介绍"
-        style={{ width: '90%' }}
-      >
-        <View className="msg" >
-          <View className='title'>景点音频介绍</View>
-          {/* <Audio
-            autoPlay={false}
-            url="//storage.360buyimg.com/jdcdkh/SMB/VCG231024564.wav"
-            src='//storage.360buyimg.com/jdcdkh/SMB/VCG231024564.wav'
-            loop={false}
-            preload="auto"
-            onPlay={e => alert(e)}
-            controls
-            muted={false}
-            onCanPlay={() => {
-              console.log('22222')
-            }}
-            onPlayEnd={() => alert('ended!')}
-          /> */}
-          {
-            // <Audio
-            //   onPlay={() => {
-            //     request('/skgy/tour/add', {
-            //       method: 'post',
-            //       data: {
-            //         ...detail
-            //       }
-            //     })
-            //   }}
-            //   loop
-            //   src={detail?.audioUrl}>
-            // </Audio>
-
-            // <Audio
-            //   src={detail?.audioUrl}
-            //   controls={true}
-            //   autoplay={false}
-            //   loop={false}
-            //   muted={true}
-            //   initialTime='30'
-            //   id='video'
-            // />
           }
         </View>
       </Popup>
@@ -255,28 +210,7 @@ export default function Index() {
         onClose={() => setFilterVis(false)}
         visible={filterVis}
         onConfirm={(v) => setFilterKey(v[0].value)}
-        options={[
-          {
-            value: '*',
-            text: '全部'
-          },
-          {
-            value: 'scenic_spot',
-            text: '景点'
-          },
-          {
-            value: 'wc',
-            text: '公厕'
-          },
-          {
-            value: 'bm',
-            text: '便民'
-          },
-          {
-            value: 'recreation',
-            text: '娱乐'
-          },
-        ]}
+        options={filterOption}
       >
       </Picker>
     </View>

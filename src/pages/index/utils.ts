@@ -48,3 +48,26 @@ export function getLocation() {
     })
   }
 }
+
+export const filterOption = [
+  {
+    value: '*',
+    text: '全部'
+  },
+  {
+    value: 'scenic_spot',
+    text: '景点'
+  },
+  {
+    value: 'wc',
+    text: '公厕'
+  },
+  {
+    value: 'bm',
+    text: '便民'
+  },
+  {
+    value: 'recreation',
+    text: '娱乐'
+  },
+]
