@@ -11,14 +11,16 @@ export default function () {
     if (process.env.TARO_ENV === 'weapp') {
       Taro.login({
         success: async function (res) {
-          console.log(res)
+          const b = await Taro.getUserInfo()
+          console.log(res, b)
           if (res.code) {
             const result = await request('/skgy/login/weiXinLogout', {
               method: 'post',
-              params: {
-                code: res.code
+              data: {
+                code: res.code,
+                iv: b.iv,
+                encryptedData: b.encryptedData
               },
-              data: null,
             })
             if (result?.data?.success) {
               const data = result?.data?.resultSet
