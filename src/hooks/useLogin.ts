@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import request from "../request";
 import Taro from "@tarojs/taro";
 // import img1 from '../img/a1.jpeg'
-import img1 from '../pages/me/img/a1.jpeg'
+import img1 from '../pages/me/img/niu.png'
 
 
 export default function () {
@@ -12,7 +12,6 @@ export default function () {
       Taro.login({
         success: async function (res) {
           const b = await Taro.getUserInfo()
-          console.log(res, b)
           if (res.code) {
             const result = await request('/skgy/login/weiXinLogout', {
               method: 'post',
@@ -25,7 +24,12 @@ export default function () {
             if (result?.data?.success) {
               const data = result?.data?.resultSet
               const { data: userRes = {} } = await request('/skgy/tour/query', { params: { logNumber: data?.logNumber } }) || {}
-              setData({ ...userRes.resultSet, name: userRes?.resultSet?.name || '游客', headPortrait: userRes?.resultSet?.headPortrait || img1 })
+              setData({
+                ...userRes.resultSet,
+                name: userRes?.resultSet?.name || '游客',
+                headPortrait: userRes?.resultSet?.headPortrait || img1,
+                wxMsg: b.userInfo,
+              })
             }
           } else {
             console.log('登录失败！' + res.errMsg)
@@ -34,5 +38,6 @@ export default function () {
       })
     }
   }, []);
+  console.log('user', data)
   return [data, setData]
 }

@@ -11,6 +11,10 @@ import { globalInfoContext } from '../../context'
 import { NavBar, Tabbar, } from '@nutui/nutui-react-taro';
 import { Home, My, Location2 } from '@nutui/icons-react-taro';
 import { filterOption, getLocation, goToMePage, } from './utils'
+import PlayIcon from './play.png'
+import VideoIcon from './video.png'
+import AduioIcon from './aduio.png'
+import LocationIcon from './location.png'
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -21,7 +25,7 @@ export default function Index() {
   const [detailVis, setDetailVis] = useState(false)
   const [videoVis, setVideoVis] = useState(false)
   const [filterVis, setFilterVis] = useState(false)
-  const [audioVis, setAudioVis] = useState(false)
+  // const [audioVis, setAudioVis] = useState(false)
   const [detail, setDetail] = useState<any>({})
   const [filterKey, setFilterKey] = useState('*')
   const audio = useRef<any>()
@@ -50,12 +54,15 @@ export default function Index() {
     }
   }
   function log(name: string, url: string) {
+    if (!state.user?.wxMsg?.nickName) {
+      return
+    }
     request(`/skgy/tour/add`, {
       method: 'post',
       data: {
         scenicSpotName: name,
         url,
-        userName: state.user?.name
+        userName: state.user?.wxMsg.nickName
       }
     })
   }
@@ -119,28 +126,29 @@ export default function Index() {
       >石刻公园</NavBar>
       <LayoutCnt
         lines={linesSrc}
-        dynElements={points.concat({ ...myLocationPoint, type: '*', iconUrl: header }).filter(i => ['*', i.type].includes(filterKey)).map(i => {
-          if (!i) {
-            return
+        dynElements={points
+          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: header, iconSize: "400,400", name: 'me' })
+          .filter(i => ['*', i.type].includes(filterKey))
+          .map(i => {
+            if (!i) {
+              return
+            }
+            const [x, y] = split(i.location)
+            const [w, h] = split(i.iconSize)
+            return {
+              ...i,
+              src: i.iconUrl,
+              x: x - w / 2,
+              y: y - h / 2,
+              width: w,
+              height: h,
+            }
+          })}
+        onClickEle={e => {
+          if (e.type === 'scenic_spot') {
+            setDetail({ ...e });
+            setDetailVis(true);
           }
-          const [x, y] = split(i.location)
-          const [w, h] = split(i.iconSize)
-          return {
-            ...i,
-            src: i.iconUrl,
-            x: x - w / 2,
-            y: y - h / 2,
-            width: w,
-            height: h,
-          }
-        })} onClickEle={e => {
-          console.log(e)
-          // if (dao) {
-          // addLine(e.id)
-          // } else if (e.type === 'scenic_spot') {
-          setDetail({ ...e });
-          setDetailVis(true);
-          // }
         }} />
       <View className='pad'></View>
       <Tabbar fixed value={0} >
@@ -156,51 +164,60 @@ export default function Index() {
       >
         <View className="msg">
           <View className={'title'}>景点名称: {detail?.name}
-            <Location2 onClick={() => {
-              addLine(detail.id, detail)
-            }} /> </View>
+          </View>
           <View className={'content'}>
             <img className={'cover'} src={detail?.coverUrl} />
             <View className={'intro'}>
-              {detail?.name || '景区介绍'}
-            </View>
-          </View>
-          <View className='act'>
-            <PlayStart style={{ visibility: !detail.videoUrl ? 'hidden' : undefined }} onClick={() => setVideoVis(true)} size={30} />
-            <View className='blank'></View>
-            <Voice style={{ visibility: !detail.audioUrl ? 'hidden' : undefined }} onClick={() => {
-              if (!detail.audioUrl) {
-                return
-              }
-              Taro.showToast({
-                title: '播放',
-                icon: 'success'
-              })
-              Taro.playBackgroundAudio({
-                dataUrl: detail.audioUrl, title: detail.name, success() {
-                  log(detail.name, detail.audioUrl)
+              <View>
+                {detail?.name || '景区介绍'}
+              </View>
+              <View className='act'>
+                {
+                  detail.videoUrl && <img src={VideoIcon} style={{ width: 32, height: 32 }} onClick={() => setVideoVis(true)} />
                 }
-              })
-            }} size={30} />
+                {
+                  detail.audioUrl && <img src={AduioIcon} style={{ width: 32, height: 32 }} onClick={() => {
+                    if (!detail.audioUrl) {
+                      return
+                    }
+                    Taro.showToast({
+                      title: '播放',
+                      icon: 'success'
+                    })
+                    Taro.playBackgroundAudio({
+                      dataUrl: detail.audioUrl, title: detail.name, success() {
+                        log(detail.name, detail.audioUrl)
+                      }
+                    })
+                  }} size={30} />
+                }
+                {
+                  LocationIcon && <img style={{ width: 32, height: 32 }} src={LocationIcon} onClick={() => {
+                    addLine(detail.id, detail)
+                  }} />
+                }
+              </View>
+            </View>
           </View>
         </View>
       </Popup>
       <Popup
         visible={videoVis}
         onClose={() => setVideoVis(false)}
-        title="景点视频介绍"
-        style={{ width: '90%' }}
+        // title="景点视频介绍"
+        style={{ width: '100%', padding: '10px' }}
       >
         <View className="msg" >
-          <View className='title'>景点视频介绍</View>
+          {/* <View className='title'>景点视频介绍</View> */}
           {
             <video className='video'
+              style={{ margin: 'auto', display: 'flex' }}
               onPlay={() => {
                 log(detail.name, detail.videoUrl)
               }}
               src={detail?.videoUrl}
               controls
-            // options={{ controls: true, autoplay: true }}
+              options={{ controls: true, autoplay: true }}
             >
             </video>
           }

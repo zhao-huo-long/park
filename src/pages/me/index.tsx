@@ -5,7 +5,7 @@ import ImageList from './image-list'
 import { NavBar, Input, Button } from '@nutui/nutui-react-taro';
 import { Cell } from '@nutui/nutui-react-taro';
 import { useEffect, useState } from 'react';
-import ava1 from './img/a1.jpeg'
+import ava1 from './img/niu.png'
 import { Notify } from '@nutui/nutui-react-taro';
 import { globalInfoContext } from '../../context'
 import { useContext } from 'react'
@@ -41,7 +41,7 @@ export default function Index() {
         ...user
       }
     },)
-    if(result?.data?.success){
+    if (result?.data?.success) {
       changeNotify('更新成功', 'success')
       state.updateUser(user)
     }
@@ -69,9 +69,13 @@ export default function Index() {
       </Cell>
       <Cell title="选择新形象" description={<ImageList value={user.headPortrait} onClick={v => setUser({ ...user, headPortrait: v })} />} >
       </Cell>
+
       <View className='act'>
         <Button onClick={() => Taro.navigateBack()}>返回</Button>
         <Button onClick={() => { submit() }}>提交</Button>
+      </View>
+      <View className='backup'>
+        蜀ICP备2023019325号-1
       </View>
       <Notify
         visible={showNotify}

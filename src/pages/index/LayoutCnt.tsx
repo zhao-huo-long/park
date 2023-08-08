@@ -12,6 +12,7 @@ interface Props {
     height: number,
     x: number,
     y: number,
+    style?: any
   }[],
   lines?: string[]
   onClickEle?: (data: any) => void
@@ -24,6 +25,7 @@ export default function LayoutCnt(props: Props) {
   const yratio = renderView.height / 11811
   useEffect(() => {
   }, [])
+  console.log(props.dynElements)
   return (
     <View className='layoutCnt'>
       <img
@@ -61,7 +63,17 @@ export default function LayoutCnt(props: Props) {
           const y = ele.y * yratio
           const w = ele.width * xratio
           const h = ele.height * yratio
-          return <img crossOrigin="anonymous" onError={(e) => console.log('图片加载错误', e)} key={ele?.src?.replace(/^https:/, 'http:')} data-x={ele.x} data-y={ele.y} onClick={() => onClickEle?.({ ...ele })} src={ele.src} className='static-img-ele' style={{ top: y, left: x, width: w, height: h }} />
+          return <img
+            crossOrigin="anonymous"
+            onError={(e) => console.log('图片加载错误', e)}
+            key={ele?.src}
+            data-x={ele.x}
+            data-y={ele.y}
+            onClick={() => onClickEle?.({ ...ele })}
+            src={ele.src}
+            className='static-img-ele'
+            style={{ ...(ele.style || {}), top: y, left: x, width: w, height: h,  }}
+          />
         })
       }
       {/* {

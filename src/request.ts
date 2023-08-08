@@ -3,7 +3,7 @@ import axios from "axios";
 import res from "./res";
 
 const request = axios.create({
-  baseURL: "http://39.107.79.30",
+  baseURL: "http://www.dygongyuan.cn",
 });
 
 request.interceptors.response.use(function(result){
