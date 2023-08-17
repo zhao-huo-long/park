@@ -1,5 +1,5 @@
 import { CoverImage, Image, View, } from '@tarojs/components'
-import baseImg from './map.jpg'
+import baseImg from './m.jpeg'
 import { useEffect, useState } from 'react'
 import './index.less'
 import Taro from '@tarojs/taro'
@@ -14,6 +14,7 @@ interface Props {
     y: number,
     style?: any
   }[],
+  onClick?: () => void
   lines?: string[]
   onClickEle?: (data: any) => void
 }
@@ -27,7 +28,7 @@ export default function LayoutCnt(props: Props) {
   }, [])
   console.log(props.dynElements)
   return (
-    <View className='layoutCnt'>
+    <View className='layoutCnt' onClick={props?.onClick}>
       <img
         className='base static-img-ele'
         id='map-base'
@@ -63,13 +64,19 @@ export default function LayoutCnt(props: Props) {
           const y = ele.y * yratio
           const w = ele.width * xratio
           const h = ele.height * yratio
+          if(!ele?.src){
+            return null
+          }
           return <img
             crossOrigin="anonymous"
             onError={(e) => console.log('图片加载错误', e)}
             key={ele?.src}
             data-x={ele.x}
             data-y={ele.y}
-            onClick={() => onClickEle?.({ ...ele })}
+            onClick={(e) => {
+              e.stopPropagation()
+              onClickEle?.({ ...ele });
+            }}
             src={ele.src}
             className='static-img-ele'
             style={{ ...(ele.style || {}), top: y, left: x, width: w, height: h,  }}

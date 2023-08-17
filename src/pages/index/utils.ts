@@ -43,9 +43,13 @@ export function getLocation() {
           const latitude = res.latitude
           const longitude = res.longitude
           resolve({ latitude, longitude })
+        },
+        fail(e){
+          console.log('e', e)
         }
       })
     })
+
   }
 }
 

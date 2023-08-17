@@ -1,4 +1,7 @@
-import { View, Video } from '@tarojs/components'
+import {
+  View,
+  Video
+} from '@tarojs/components'
 import Taro, { } from '@tarojs/taro'
 import './index.less'
 import LayoutCnt from './LayoutCnt'
@@ -15,6 +18,7 @@ import PlayIcon from './play.png'
 import VideoIcon from './video.png'
 import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
+import bg from './v-bg-1.png'
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -25,7 +29,7 @@ export default function Index() {
   const [detailVis, setDetailVis] = useState(false)
   const [videoVis, setVideoVis] = useState(false)
   const [filterVis, setFilterVis] = useState(false)
-  // const [audioVis, setAudioVis] = useState(false)
+  const [introVideoVis, setIntroVideoVis] = useState(false)
   const [detail, setDetail] = useState<any>({})
   const [filterKey, setFilterKey] = useState('*')
   const audio = useRef<any>()
@@ -33,17 +37,26 @@ export default function Index() {
   const [myLocationPoint, setMyLocationPoint] = useState({})
   const state = useContext(globalInfoContext)
   const [dao, setDao] = useState(Taro.getStorageSync('dao'))
-
-  const playPointMusic = async () => {
-    const { latitude, longitude } = await getLocation() as any
+  const playPointMusic = async (changeLocation?: any) => {
+    let latitude = 0;
+    let longitude = 0;
+    if (changeLocation?.longitude) {
+      longitude = changeLocation.longitude
+      latitude = changeLocation.latitude
+    } else {
+      const wxLocation = await getLocation() as any
+      longitude = wxLocation?.longitude
+      latitude = wxLocation?.latitude
+    }
     console.log('latitude, longitude', latitude, longitude)
     const res = await request('/skgy/tour/locationScenicSpot', {
       params: {
-        lat: `${latitude},${longitude}`
+        lat: `${longitude},${latitude}`
       }
     })
-    setMyLocationPoint(res?.data?.resultSet)
-    if (res?.data?.resultSet?.audioUrl && dao) {
+    //
+    const resultSet = res?.data?.resultSet
+    if (resultSet?.audioUrl && dao && resultSet?.audioUrl !== myLocationPoint?.audioUrl) {
       Taro.playBackgroundAudio({
         dataUrl: res.data.resultSet.audioUrl,
         title: res.data.resultSet.name,
@@ -51,6 +64,7 @@ export default function Index() {
           log(res.data.resultSet.name, res.data.resultSet.audioUrl)
         }
       })
+      setMyLocationPoint(res?.data?.resultSet)
     }
   }
   function log(name: string, url: string) {
@@ -90,21 +104,36 @@ export default function Index() {
   useEffect(() => {
     Taro.setStorageSync('dao', dao)
   }, [dao])
-  useEffect(() => {
+  const playBgM = () => {
     const innerAudioContext = Taro.createInnerAudioContext()
     audio.current = innerAudioContext
     innerAudioContext.autoplay = true
     innerAudioContext.onPlay(() => {
       console.log('开始播放')
     })
-    request('/skgy/tour/queryScenicSpot', {})
-      .then((e: any) => {
-        setPoints(e.data.resultSet || e.resultSet || [])
-      })
     playPointMusic()
+  }
+  useEffect(() => {
+    request('/skgy/tour/queryScenicSpot', {})
+      .then((e: any) => setPoints(e.data.resultSet || e.resultSet || []))
+    playBgM()
+    const pl = (res) => {
+      playPointMusic(res)
+    }
+    Taro.onLocationChange(pl)
+    return () => {
+      Taro.offLocationChange(pl)
+    }
   }, [])
   const header = state?.user?.headPortrait
-  console.log(myLocationPoint)
+  const playIntroVideo = points?.find(i => i?.type === 'home')
+
+  useEffect(() => {
+    if (playIntroVideo?.videoUrl) {
+      setIntroVideoVis(true)
+    }
+  }, [playIntroVideo?.videoUrl])
+  console.log('introVideoVis', introVideoVis)
   return (
     <View className='index'>
       <NavBar
@@ -119,12 +148,18 @@ export default function Index() {
         }}
         fixed
         right={
-          <span onClick={() => setFilterVis(true)}>
-            <Search />
-          </span>
+          <View style={{ display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+            <span onClick={() => setFilterVis(true)}>
+              <Search size={22} />
+            </span>
+          </View>
         }
       >石刻公园</NavBar>
       <LayoutCnt
+        onClick={() => {
+          setDetailVis(false)
+          setIntroVideoVis(false)
+        }}
         lines={linesSrc}
         dynElements={points
           .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: header, iconSize: "400,400", name: 'me' })
@@ -159,17 +194,20 @@ export default function Index() {
         onClose={() => {
           setDetailVis(false)
         }}
-        title="景点详情"
+        overlay={false}
+        // title="景点详情"
         position="bottom"
       >
         <View className="msg">
-          <View className={'title'}>景点名称: {detail?.name}
-          </View>
+          {/* <View className={'title'}>景点名称: {detail?.name}
+          </View> */}
           <View className={'content'}>
             <img className={'cover'} src={detail?.coverUrl} />
             <View className={'intro'}>
+              <View className={'title'}>{detail?.name}
+              </View>
               <View>
-                {detail?.name || '景区介绍'}
+                {detail?.buildTime} {detail?.buildTime && '建设'}
               </View>
               <View className='act'>
                 {
@@ -204,23 +242,58 @@ export default function Index() {
       <Popup
         visible={videoVis}
         onClose={() => setVideoVis(false)}
-        // title="景点视频介绍"
-        style={{ width: '100%', padding: '10px' }}
+        style={{ width: '100%', background: 'rgba(1,1,1,0)' }}
+        destroyOnClose
       >
-        <View className="msg" >
-          {/* <View className='title'>景点视频介绍</View> */}
-          {
-            <video className='video'
-              style={{ margin: 'auto', display: 'flex' }}
-              onPlay={() => {
-                log(detail.name, detail.videoUrl)
-              }}
-              src={detail?.videoUrl}
-              controls
-              options={{ controls: true, autoplay: true }}
-            >
-            </video>
-          }
+        <img
+          style={{
+            margin: '0 auto',
+            height: '260px',
+            width: '100%',
+            display: 'flex',
+            top: 0,
+            objectFit: 'cover',
+          }}
+          src={bg}
+        />
+        <Video
+          style={{ margin: '0 auto', top: 60, height: '200px', position: 'absolute', width: '100%', display: 'flex', }}
+          onPlay={() => {
+            log(detail.name, detail.videoUrl)
+          }}
+          src={detail?.videoUrl}
+          controls={true}
+          autoplay={true}
+        >
+        </Video>
+      </Popup>
+      <Popup
+        overlay={false}
+        visible={introVideoVis}
+        onClose={() => setIntroVideoVis(false)}
+        style={{ width: '100%', background: 'rgba(1,1,1,0)' }}
+        destroyOnClose
+      >
+        <View style={{ background: 'rgba(1,1,1,0)' }}>
+          <img
+            style={{
+              margin: '0 auto',
+              height: '260px',
+              width: '100%',
+              display: 'flex',
+              top: 0,
+              objectFit: 'cover',
+            }}
+            src={bg}
+          />
+          <Video
+            style={{ margin: '0 auto', top: 60, height: '200px', position: 'absolute', width: '100%', display: 'flex', }}
+            src={playIntroVideo?.videoUrl}
+            controls={true}
+            autoplay={true}
+            loop={true}
+          >
+          </Video>
         </View>
       </Popup>
       <Picker
@@ -228,8 +301,15 @@ export default function Index() {
         visible={filterVis}
         onConfirm={(v) => setFilterKey(v[0].value)}
         options={filterOption}
-      >
-      </Picker>
+      />
+      {
+        playIntroVideo?.videoUrl && <img
+          src={PlayIcon}
+          onClick={() => { setIntroVideoVis(true); console.log(123) }}
+          alt=""
+          style={{ width: 24, height: 24, marginRight: 0, position: 'fixed', right: 10, top: 100 }}
+        />
+      }
     </View>
   )
 }

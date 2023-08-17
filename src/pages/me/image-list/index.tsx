@@ -14,7 +14,10 @@ import img12 from '../img/zhu.png'
 
 import './index.less'
 
-const Images = [img1, img2, img3, img4, img5, img6, img7, img8, img9, img10, img11, img12]
+const Images = [
+  img1, img2, img3, img4,
+  img5, img6, img7, img8, img9, img10, img11, img12
+]
 
 export default function ImageList(props: { onClick: (v: string) => void, value: string }) {
   return <View className="ava-list">
