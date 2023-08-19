@@ -118,8 +118,19 @@ export default function Index() {
       .then((e: any) => setPoints(e.data.resultSet || e.resultSet || []))
     playBgM()
     const pl = (res) => {
+      console.log('位置变化:', res)
       playPointMusic(res)
     }
+    Taro.authorize({
+      scope: 'scope.userLocation',
+      success() {
+        Taro.startLocationUpdate({
+          success(res) {
+            console.log(res);
+          }
+        })
+      }
+    })
     Taro.onLocationChange(pl)
     return () => {
       Taro.offLocationChange(pl)
@@ -127,13 +138,11 @@ export default function Index() {
   }, [])
   const header = state?.user?.headPortrait
   const playIntroVideo = points?.find(i => i?.type === 'home')
-
   useEffect(() => {
     if (playIntroVideo?.videoUrl) {
       setIntroVideoVis(true)
     }
   }, [playIntroVideo?.videoUrl])
-  console.log('introVideoVis', introVideoVis)
   return (
     <View className='index'>
       <NavBar

@@ -2,14 +2,14 @@
   "miniprogramRoot": "./dist",
   "projectname": "park",
   "description": "park",
-  "appid": "touristappid",
+  "appid": "wxe01a9c47d0bec868",
   "setting": {
-    "urlCheck": true,
+    "urlCheck": false,
     "es6": false,
     "enhance": false,
     "compileHotReLoad": false,
     "postcss": false,
-    "minified": false
+    "minified": true
   },
   "compileType": "miniprogram"
 }
