@@ -1,6 +1,7 @@
 import {
   View,
-  Video
+  Video,
+  RichText
 } from '@tarojs/components'
 import Taro, { } from '@tarojs/taro'
 import './index.less'
@@ -8,11 +9,10 @@ import LayoutCnt from './LayoutCnt'
 import { useContext, useEffect, useRef, useState } from 'react'
 import request from '../../request'
 import { Popup, Picker, Switch } from '@nutui/nutui-react-taro'
-import { PlayStart, Voice, Search } from '@nutui/icons-react-taro'
-// import { Video } from '@nutui/nutui-react-taro';
+import { Search } from '@nutui/icons-react-taro'
 import { globalInfoContext } from '../../context'
 import { NavBar, Tabbar, } from '@nutui/nutui-react-taro';
-import { Home, My, Location2 } from '@nutui/icons-react-taro';
+import { Home, My, } from '@nutui/icons-react-taro';
 import { filterOption, getLocation, goToMePage, } from './utils'
 import PlayIcon from './play.png'
 import VideoIcon from './video.png'
@@ -20,6 +20,7 @@ import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
 import bg from './v-bg-1.png'
 import throttle from 'lodash/throttle'
+import bo from './bo.gif'
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -181,7 +182,7 @@ export default function Index() {
         }}
         lines={linesSrc}
         dynElements={points
-          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: header, iconSize: "400,400", name: 'me' })
+          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: bo, iconSize: "400,400", name: 'me' })
           .filter(i => ['*', i.type].includes(filterKey))
           .map(i => {
             if (!i) {
@@ -256,6 +257,11 @@ export default function Index() {
               </View>
             </View>
           </View>
+          {
+            !!detail.memo && <View style={{ width: '100%', marginTop: 10, maxHeight: 200, overflow: 'auto' }}>
+              <RichText style={{ width: '100%' }} nodes={detail.memo} />
+            </View>
+          }
         </View>
       </Popup>
       <Popup

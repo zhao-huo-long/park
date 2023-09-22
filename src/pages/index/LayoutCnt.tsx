@@ -1,5 +1,5 @@
-import { CoverImage, Image, View, } from '@tarojs/components'
-import baseImg from './m.jpeg'
+import {  View, } from '@tarojs/components'
+import baseImg from './map-new.jpeg'
 import { useEffect, useState } from 'react'
 import './index.less'
 import Taro from '@tarojs/taro'
