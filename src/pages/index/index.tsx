@@ -19,6 +19,7 @@ import VideoIcon from './video.png'
 import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
 import bg from './v-bg-1.png'
+import throttle from 'lodash/throttle'
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -51,22 +52,30 @@ export default function Index() {
     console.log('latitude, longitude', latitude, longitude)
     const res = await request('/skgy/tour/locationScenicSpot', {
       params: {
-        lat: `${longitude},${latitude}`
+        lat: `${latitude},${longitude}`
       }
     })
-    //
     const resultSet = res?.data?.resultSet
-    if (resultSet?.audioUrl && dao && resultSet?.audioUrl !== myLocationPoint?.audioUrl) {
-      Taro.playBackgroundAudio({
-        dataUrl: res.data.resultSet.audioUrl,
-        title: res.data.resultSet.name,
-        success() {
-          log(res.data.resultSet.name, res.data.resultSet.audioUrl)
-        }
-      })
+    if (!myLocationPoint?.id) {
+      setMyLocationPoint(res?.data?.resultSet || {})
+      return
+    }
+    if (resultSet?.id !== myLocationPoint?.id) {
       setMyLocationPoint(res?.data?.resultSet)
     }
   }
+  useEffect(() => {
+    console.log('play-music', myLocationPoint, dao)
+    if (myLocationPoint?.audioUrl && dao) {
+      Taro.playBackgroundAudio({
+        dataUrl: myLocationPoint?.audioUrl,
+        title: myLocationPoint.name,
+        success() {
+          log(myLocationPoint?.name, myLocationPoint?.audioUrl)
+        }
+      })
+    }
+  }, [myLocationPoint, dao])
   function log(name: string, url: string) {
     if (!state.user?.wxMsg?.nickName) {
       return
@@ -117,10 +126,10 @@ export default function Index() {
     request('/skgy/tour/queryScenicSpot', {})
       .then((e: any) => setPoints(e.data.resultSet || e.resultSet || []))
     playBgM()
-    const pl = (res) => {
+    const pl = throttle((res) => {
       console.log('位置变化:', res)
       playPointMusic(res)
-    }
+    }, 5000)
     Taro.authorize({
       scope: 'scope.userLocation',
       success() {
@@ -143,6 +152,7 @@ export default function Index() {
       setIntroVideoVis(true)
     }
   }, [playIntroVideo?.videoUrl])
+  console.log('myLocationPoint', myLocationPoint)
   return (
     <View className='index'>
       <NavBar
