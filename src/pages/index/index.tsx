@@ -25,6 +25,7 @@ import bo from './bo.gif'
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
 }
+const h5 = process.env.TARO_ENV === 'h5'
 
 export default function Index() {
   const [points, setPoints] = useState<any>([])
@@ -38,10 +39,21 @@ export default function Index() {
   const [linesSrc, setLinesSrc] = useState<string[]>([])
   const [myLocationPoint, setMyLocationPoint] = useState({})
   const state = useContext(globalInfoContext)
+  const [secIds, setSecIds] = useState<number[]>([])
   const [dao, setDao] = useState(Taro.getStorageSync('dao'))
   const playPointMusic = async (changeLocation?: any) => {
     let latitude = 0;
     let longitude = 0;
+    if (process.env.TARO_ENV === 'h5') {
+      const res = await request('/skgy/tour/locationScenicSpot', {
+        params: {
+          lat: `${latitude},${longitude}`
+        }
+      })
+      setMyLocationPoint(res?.data?.resultSet)
+      return
+    }
+
     if (changeLocation?.longitude) {
       longitude = changeLocation.longitude
       latitude = changeLocation.latitude
@@ -59,14 +71,18 @@ export default function Index() {
     const resultSet = res?.data?.resultSet
     if (!myLocationPoint?.id) {
       setMyLocationPoint(res?.data?.resultSet || {})
+      setSecIds(v => v.includes(res?.data?.resultSet?.id) ? v : v.concat(res?.data?.resultSet?.id))
       return
     }
     if (resultSet?.id !== myLocationPoint?.id) {
       setMyLocationPoint(res?.data?.resultSet)
+      setSecIds(v => v.includes(res?.data?.resultSet?.id) ? v : v.concat(res?.data?.resultSet?.id))
     }
   }
   useEffect(() => {
-    console.log('play-music', myLocationPoint, dao)
+    if (h5) {
+      return
+    }
     if (myLocationPoint?.audioUrl && dao) {
       Taro.playBackgroundAudio({
         dataUrl: myLocationPoint?.audioUrl,
@@ -78,6 +94,9 @@ export default function Index() {
     }
   }, [myLocationPoint, dao])
   function log(name: string, url: string) {
+    if (h5) {
+      return
+    }
     if (!state.user?.wxMsg?.nickName) {
       return
     }
@@ -126,6 +145,9 @@ export default function Index() {
   useEffect(() => {
     request('/skgy/tour/queryScenicSpot', {})
       .then((e: any) => setPoints(e.data.resultSet || e.resultSet || []))
+    if (h5) {
+      return
+    }
     playBgM()
     const pl = throttle((res) => {
       console.log('位置变化:', res)
@@ -147,8 +169,12 @@ export default function Index() {
     }
   }, [])
   const header = state?.user?.headPortrait
+  console.log(`ids`, secIds)
   const playIntroVideo = points?.find(i => i?.type === 'home')
   useEffect(() => {
+    if (h5) {
+      return
+    }
     if (playIntroVideo?.videoUrl) {
       setIntroVideoVis(true)
     }
@@ -156,25 +182,28 @@ export default function Index() {
   console.log('myLocationPoint', myLocationPoint)
   return (
     <View className='index'>
-      <NavBar
-        left={<>智能导览：
-          <Switch
-            checked={dao}
-            onChange={(v) => setDao(v)}
-          /></>
-        }
-        style={{
-          marginBottom: 'var(--nutui-navbar-margin-bottom, 0)'
-        }}
-        fixed
-        right={
-          <View style={{ display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
-            <span onClick={() => setFilterVis(true)}>
-              <Search size={22} />
-            </span>
-          </View>
-        }
-      >石刻公园</NavBar>
+      {
+        process.env.TARO_ENV === 'h5' ? null : <NavBar
+          left={<>智能导览：
+            <Switch
+              checked={dao}
+              onChange={(v) => setDao(v)}
+            /></>
+          }
+          style={{
+            marginBottom: 'var(--nutui-navbar-margin-bottom, 0)'
+          }}
+          fixed
+          right={
+            <View style={{ display: 'flex', height: '100%', justifyContent: 'center', alignItems: 'center' }}>
+              <span onClick={() => setFilterVis(true)}>
+                <Search size={22} />
+              </span>
+            </View>
+          }
+        >石刻公园</NavBar>
+      }
+
       <LayoutCnt
         onClick={() => {
           setDetailVis(false)
@@ -182,7 +211,7 @@ export default function Index() {
         }}
         lines={linesSrc}
         dynElements={points
-          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: bo, iconSize: "400,400", name: 'me' })
+          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: bo, iconSize: "400,400", id: 'me' })
           .filter(i => ['*', i.type].includes(filterKey))
           .map(i => {
             if (!i) {
@@ -192,7 +221,7 @@ export default function Index() {
             const [w, h] = split(i.iconSize)
             return {
               ...i,
-              src: i.iconUrl,
+              src: i.id !== 'me' && i.prepositionIco && !secIds.includes(i.id) ? i.prepositionIco : i.iconUrl,
               x: x - w / 2,
               y: y - h / 2,
               width: w,
@@ -200,27 +229,31 @@ export default function Index() {
             }
           })}
         onClickEle={e => {
-          if (e.type === 'scenic_spot') {
+          if (e.prepositionIco && !secIds.includes(e.id) && e.id !== 'me') {
+            setSecIds((v) => [...v, e.id])
+            return
+          }
+          if (e.type === 'scenic_spot' || e.id === 'me') {
             setDetail({ ...e });
             setDetailVis(true);
           }
         }} />
-      <View className='pad'></View>
-      <Tabbar fixed value={0} >
+      {
+        process.env.TARO_ENV === 'h5' ? null : <View className='pad'></View>
+      }
+
+      {process.env.TARO_ENV === 'h5' ? null : <Tabbar fixed value={0} >
         <Tabbar.Item key={'title'} title="首页" icon={<Home width={20} height={20} />} />
         <Tabbar.Item title="我的" icon={<My onClick={() => goToMePage()} width={20} height={20} />} />
-      </Tabbar>
+      </Tabbar>}
       <Popup visible={detailVis}
         onClose={() => {
           setDetailVis(false)
         }}
         overlay={false}
-        // title="景点详情"
         position="bottom"
       >
         <View className="msg">
-          {/* <View className={'title'}>景点名称: {detail?.name}
-          </View> */}
           <View className={'content'}>
             <img className={'cover'} src={detail?.coverUrl} />
             <View className={'intro'}>
@@ -271,18 +304,12 @@ export default function Index() {
         destroyOnClose
       >
         <img
-          style={{
-            margin: '0 auto',
-            height: '260px',
-            width: '100%',
-            display: 'flex',
-            top: 0,
-            objectFit: 'cover',
-          }}
+          className='vbg'
           src={bg}
         />
         <Video
-          style={{ margin: '0 auto', top: 60, height: '200px', position: 'absolute', width: '100%', display: 'flex', }}
+          className='vvideo'
+          objectFit="fill"
           onPlay={() => {
             log(detail.name, detail.videoUrl)
           }}
@@ -301,18 +328,13 @@ export default function Index() {
       >
         <View style={{ background: 'rgba(1,1,1,0)' }}>
           <img
-            style={{
-              margin: '0 auto',
-              height: '260px',
-              width: '100%',
-              display: 'flex',
-              top: 0,
-              objectFit: 'cover',
-            }}
+            className='vbg'
             src={bg}
           />
           <Video
-            style={{ margin: '0 auto', top: 60, height: '200px', position: 'absolute', width: '100%', display: 'flex', }}
+            className='vvideo'
+            objectFit="fill"
+            // style={{ margin: '0 auto', top: 60, height: '200px', position: 'absolute', width: '100%', display: 'flex', }}
             src={playIntroVideo?.videoUrl}
             controls={true}
             autoplay={true}
