@@ -291,7 +291,11 @@ export default function Index() {
             </View>
           </View>
           {
-            !!detail.memo && <View style={{ width: '100%', marginTop: 10, maxHeight: 200, overflow: 'auto' }}>
+            !!detail.memo && <View style={{
+              width: '100%', marginTop: 10, maxHeight: 200, overflow: 'auto',
+              border: '2px solid orange',
+              borderRadius: '4px',
+            }}>
               <RichText style={{ width: '100%' }} nodes={detail.memo} />
             </View>
           }
