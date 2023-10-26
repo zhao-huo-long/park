@@ -20,7 +20,8 @@ import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
 import bg from './v-bg-1.png'
 import throttle from 'lodash/throttle'
-import bo from './bo.gif'
+
+const bo = `http://www.dygongyuan.cn/static/orientation.gif`
 
 function split(a: string = '') {
   return (a || '').split(',').map(Number)
@@ -203,7 +204,6 @@ export default function Index() {
           }
         >石刻公园</NavBar>
       }
-
       <LayoutCnt
         onClick={() => {
           setDetailVis(false)
@@ -211,7 +211,7 @@ export default function Index() {
         }}
         lines={linesSrc}
         dynElements={points
-          .concat({ ...myLocationPoint, type: '*', style: { borderRadius: '50%' }, iconUrl: bo, iconSize: "400,400", id: 'me' })
+          .concat({ ...myLocationPoint, type: '*', iconUrl: bo, iconSize: "1200,1200", id: 'me' })
           .filter(i => ['*', i.type].includes(filterKey))
           .map(i => {
             if (!i) {
@@ -233,7 +233,7 @@ export default function Index() {
             setSecIds((v) => [...v, e.id])
             return
           }
-          if (e.type === 'scenic_spot' || e.id === 'me') {
+          if (e.type === 'scenic_spot' || e.type === 'bm' || e.id === 'me') {
             setDetail({ ...e });
             setDetailVis(true);
           }
