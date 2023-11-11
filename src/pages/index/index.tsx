@@ -28,6 +28,8 @@ function split(a: string = '') {
 }
 const h5 = process.env.TARO_ENV === 'h5'
 
+let playingMusic = ``
+
 export default function Index() {
   const [points, setPoints] = useState<any>([])
   const [detailVis, setDetailVis] = useState(false)
@@ -38,7 +40,7 @@ export default function Index() {
   const [filterKey, setFilterKey] = useState('*')
   const audio = useRef<any>()
   const [linesSrc, setLinesSrc] = useState<string[]>([])
-  const [myLocationPoint, setMyLocationPoint] = useState({})
+  const [myLocationPoint, setMyLocationPoint] = useState<Record<string, any>>({})
   const state = useContext(globalInfoContext)
   const [secIds, setSecIds] = useState<number[]>([])
   const [dao, setDao] = useState(Taro.getStorageSync('dao'))
@@ -66,7 +68,8 @@ export default function Index() {
     console.log('latitude, longitude', latitude, longitude)
     const res = await request('/skgy/tour/locationScenicSpot', {
       params: {
-        lat: `${latitude},${longitude}`
+        lat: `${latitude},${longitude}`,
+        orientation: true,
       }
     })
     const resultSet = res?.data?.resultSet
@@ -81,26 +84,27 @@ export default function Index() {
     }
   }
   useEffect(() => {
-    if (h5) {
-      return
-    }
-    if (myLocationPoint?.audioUrl && dao) {
+    if (h5) return
+    if (
+      myLocationPoint?.audioUrl
+      && dao
+      && playingMusic
+      !== myLocationPoint?.audioUrl
+      && myLocationPoint.autoplay
+    ) {
       Taro.playBackgroundAudio({
         dataUrl: myLocationPoint?.audioUrl,
         title: myLocationPoint.name,
         success() {
+          playingMusic = myLocationPoint?.audioUrl
           log(myLocationPoint?.name, myLocationPoint?.audioUrl)
         }
       })
     }
   }, [myLocationPoint, dao])
   function log(name: string, url: string) {
-    if (h5) {
-      return
-    }
-    if (!state.user?.wxMsg?.nickName) {
-      return
-    }
+    if (h5) return
+    if (!state.user?.wxMsg?.nickName) return
     request(`/skgy/tour/add`, {
       method: 'post',
       data: {
@@ -111,20 +115,29 @@ export default function Index() {
     })
   }
 
-  function addLine(targetId: number) {
+  async function addLine(targetId: number) {
     Taro.showLoading({
       title: `规划路线中`
+    })
+    const wxLocation = await getLocation() as any
+    const longitude = wxLocation?.longitude
+    const latitude = wxLocation?.latitude
+    console.log('latitude, longitude', latitude, longitude)
+    const res = await request('/skgy/tour/locationScenicSpot', {
+      params: {
+        lat: `${latitude},${longitude}`,
+        orientation: false
+      }
     })
     request('/skgy/tour/navigation', {
       method: 'get',
       params: {
         destinationId: targetId,
-        originId: myLocationPoint.id,
+        originId: res?.data?.resultSet?.id,
       }
     })
-      .then((e: any) => {
-        setLinesSrc(e.data.resultSet.urlList)
-      }).finally(() => {
+      .then((e: any) => setLinesSrc(e.data.resultSet.urlList))
+      .finally(() => {
         setDetailVis(false)
         setTimeout(() => {
           Taro.hideLoading()
@@ -146,13 +159,11 @@ export default function Index() {
   useEffect(() => {
     request('/skgy/tour/queryScenicSpot', {})
       .then((e: any) => setPoints(e.data.resultSet || e.resultSet || []))
-    if (h5) {
-      return
-    }
+    if (h5) return
     playBgM()
     const pl = throttle((res) => {
       console.log('位置变化:', res)
-      playPointMusic(res)
+      playPointMusic(res,)
     }, 5000)
     Taro.authorize({
       scope: 'scope.userLocation',
@@ -165,11 +176,8 @@ export default function Index() {
       }
     })
     Taro.onLocationChange(pl)
-    return () => {
-      Taro.offLocationChange(pl)
-    }
+    return () => Taro.offLocationChange(pl);
   }, [])
-  const header = state?.user?.headPortrait
   console.log(`ids`, secIds)
   const playIntroVideo = points?.find(i => i?.type === 'home')
   useEffect(() => {
@@ -229,6 +237,7 @@ export default function Index() {
             }
           })}
         onClickEle={e => {
+          if(e.type === "orientation") return
           if (e.prepositionIco && !secIds.includes(e.id) && e.id !== 'me') {
             setSecIds((v) => [...v, e.id])
             return
@@ -239,17 +248,14 @@ export default function Index() {
           }
         }} />
       {
-        process.env.TARO_ENV === 'h5' ? null : <View className='pad'></View>
+        process.env.TARO_ENV === 'h5' ? null : <View className='pad' />
       }
-
       {process.env.TARO_ENV === 'h5' ? null : <Tabbar fixed value={0} >
         <Tabbar.Item key={'title'} title="首页" icon={<Home width={20} height={20} />} />
         <Tabbar.Item title="我的" icon={<My onClick={() => goToMePage()} width={20} height={20} />} />
       </Tabbar>}
       <Popup visible={detailVis}
-        onClose={() => {
-          setDetailVis(false)
-        }}
+        onClose={() => setDetailVis(false)}
         overlay={false}
         position="bottom"
       >
@@ -292,11 +298,16 @@ export default function Index() {
           </View>
           {
             !!detail.memo && <View style={{
-              width: '100%', marginTop: 10, maxHeight: 200, overflow: 'auto',
+              width: '100%',
+              marginTop: 10,
+              maxHeight: 200,
+              overflow: 'auto',
               border: '2px solid orange',
               borderRadius: '4px',
+              padding: 6,
+              boxSizing: 'border-box',
             }}>
-              <RichText style={{ width: '100%' }} nodes={detail.memo} />
+              <RichText style={{ width: '97%' }} nodes={detail.memo} />
             </View>
           }
         </View>
