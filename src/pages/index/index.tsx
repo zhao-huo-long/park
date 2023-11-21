@@ -20,7 +20,7 @@ import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
 import bg from './v-bg-1.png'
 import throttle from 'lodash/throttle'
-import SwiperList from './SwiperList';
+import SwiperList, { list } from './SwiperList';
 
 const bo = `http://www.dygongyuan.cn/static/orientation.gif`
 
@@ -250,7 +250,7 @@ export default function Index() {
             setSecIds((v) => [...v, e.id])
             return
           }
-          if (e.type === 'scenic_spot' || e.type === 'bm' || e.id === 'me') {
+          if (e.type === 'scenic_spot' || e.type === 'bm' || e.type === 'recreation' || e.id === 'me') {
             setDetail({ ...e });
             setDetailVis(true);
           }
@@ -368,7 +368,7 @@ export default function Index() {
       </Popup>
       <Popup
         overlay={false}
-        visible={swiper.vis}
+        visible={swiper.vis && !!list[swiper.name].length}
         onClose={() => setSwiper((v) => ({ ...v, vis: false }))}
         style={{ width: '100%', background: 'rgba(1,1,1,0)' }}
         destroyOnClose
