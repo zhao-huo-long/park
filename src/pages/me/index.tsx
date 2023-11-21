@@ -1,5 +1,5 @@
 import { View } from '@tarojs/components'
-import Taro, { useLoad, } from '@tarojs/taro'
+import Taro, { useLoad } from '@tarojs/taro'
 import './index.less'
 import ImageList from './image-list'
 import { NavBar, Input, Button } from '@nutui/nutui-react-taro';

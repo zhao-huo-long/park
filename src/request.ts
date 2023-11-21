@@ -3,7 +3,7 @@ import axios from "axios";
 import res from "./res";
 
 const request = axios.create({
-  baseURL: "http://www.dygongyuan.cn",
+  baseURL: "https://www.dygongyuan.cn",
 });
 
 request.interceptors.response.use(function(result){

@@ -20,6 +20,7 @@ import AduioIcon from './aduio.png'
 import LocationIcon from './location.png'
 import bg from './v-bg-1.png'
 import throttle from 'lodash/throttle'
+import SwiperList from './SwiperList';
 
 const bo = `http://www.dygongyuan.cn/static/orientation.gif`
 
@@ -38,6 +39,10 @@ export default function Index() {
   const [introVideoVis, setIntroVideoVis] = useState(false)
   const [detail, setDetail] = useState<any>({})
   const [filterKey, setFilterKey] = useState('*')
+  const [swiper, setSwiper] = useState({
+    vis: false,
+    name: '',
+  })
   const audio = useRef<any>()
   const [linesSrc, setLinesSrc] = useState<string[]>([])
   const [myLocationPoint, setMyLocationPoint] = useState<Record<string, any>>({})
@@ -97,6 +102,9 @@ export default function Index() {
         title: myLocationPoint.name,
         success() {
           playingMusic = myLocationPoint?.audioUrl
+          if (['龙凤呈祥', '中华魂', '世纪大鼎'].includes(myLocationPoint.name)) {
+            setSwiper(v => ({ ...v, vis: true, name: myLocationPoint.name }))
+          }
           log(myLocationPoint?.name, myLocationPoint?.audioUrl)
         }
       })
@@ -162,8 +170,8 @@ export default function Index() {
     if (h5) return
     playBgM()
     const pl = throttle((res) => {
-      console.log('位置变化:', res)
-      playPointMusic(res,)
+      console.log('位置变化:', res);
+      playPointMusic(res,);
     }, 5000)
     Taro.authorize({
       scope: 'scope.userLocation',
@@ -237,7 +245,7 @@ export default function Index() {
             }
           })}
         onClickEle={e => {
-          if(e.type === "orientation") return
+          if (e.type === "orientation") return
           if (e.prepositionIco && !secIds.includes(e.id) && e.id !== 'me') {
             setSecIds((v) => [...v, e.id])
             return
@@ -356,6 +364,17 @@ export default function Index() {
             loop={true}
           >
           </Video>
+        </View>
+      </Popup>
+      <Popup
+        overlay={false}
+        visible={swiper.vis}
+        onClose={() => setSwiper((v) => ({ ...v, vis: false }))}
+        style={{ width: '100%', background: 'rgba(1,1,1,0)' }}
+        destroyOnClose
+      >
+        <View style={{ background: 'rgba(1,1,1,0)', padding: 20 }}>
+          <SwiperList name={swiper.name} />
         </View>
       </Popup>
       <Picker
